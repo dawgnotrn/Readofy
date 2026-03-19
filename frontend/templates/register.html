@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Readofy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">Readofy</div>
+                <p class="text-secondary">Create your smart library account</p>
+            </div>
+            
+            <div class="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-msg {% if category == 'error' %}flash-error{% else %}flash-success{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <form action="{{ url_for('auth.register') }}" method="POST">
+                <div class="input-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" class="input-field" placeholder="John Doe" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="input-field" placeholder="you@example.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="input-field" placeholder="Create a password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block mt-2">Register</button>
+            </form>
+            
+            <div class="text-center mt-4 text-secondary" style="font-size: 0.875rem;">
+                Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
