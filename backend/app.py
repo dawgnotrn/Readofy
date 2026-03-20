@@ -5,6 +5,8 @@ import os
 from routes.auth_routes import auth_bp
 from routes.book_routes import book_bp
 from routes.chatbot_routes import chatbot_bp
+from routes.club_routes import club_bp
+from routes.reward_routes import reward_bp
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +26,8 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_dev_key")
 app.register_blueprint(auth_bp)
 app.register_blueprint(book_bp)
 app.register_blueprint(chatbot_bp)
+app.register_blueprint(club_bp)
+app.register_blueprint(reward_bp)
 
 @app.route("/")
 def index():

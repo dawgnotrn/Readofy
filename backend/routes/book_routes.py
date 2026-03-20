@@ -9,6 +9,13 @@ from api.google_books import search_books
 
 book_bp = Blueprint('book', __name__)
 
+@book_bp.route('/read/<google_books_id>')
+def read_book(google_books_id):
+    """Renders the embedded Google Books reader page"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('reader.html', book_id=google_books_id, name=session.get('user_name'))
+
 @book_bp.route('/dashboard')
 def dashboard():
     """Renders the main dashboard for logged-in users"""
@@ -27,11 +34,31 @@ def dashboard():
             wishlist_books = wishlist_response.data if wishlist_response.data else []
         except:
             wishlist_books = []
+            
+        # Fetch rewards
+        try:
+            rewards_response = supabase.table('userrewards').select('*').eq('user_id', session['user_id']).execute()
+            if not rewards_response.data:
+                supabase.table('userrewards').insert({'user_id': session['user_id'], 'points': 0, 'level': 'Novice Reader'}).execute()
+                rewards = {'points': 0, 'level': 'Novice Reader'}
+            else:
+                rewards = rewards_response.data[0]
+        except:
+            rewards = {'points': 0, 'level': 'Novice Reader'}
+            
+        # Get Varied Recommendations (example categories)
+        try:
+            import random
+            categories = ['Fiction', 'Technology', 'Science', 'Mystery', 'History']
+            category = random.choice(categories)
+            suggestions = search_books(f"subject:{category}")[:6]
+        except:
+            suggestions = []
         
-        return render_template('dashboard.html', name=session.get('user_name'), borrowed_books=borrowed_books, wishlist_books=wishlist_books)
+        return render_template('dashboard.html', name=session.get('user_name'), borrowed_books=borrowed_books, wishlist_books=wishlist_books, rewards=rewards, suggestions=suggestions)
     except Exception as e:
         flash(f"Error loading dashboard: {e}", "error")
-        return render_template('dashboard.html', name=session.get('user_name'), borrowed_books=[], wishlist_books=[])
+        return render_template('dashboard.html', name=session.get('user_name'), borrowed_books=[], wishlist_books=[], rewards={'points':0}, suggestions=[])
 
 @book_bp.route('/api/search')
 def search():
@@ -75,7 +102,22 @@ def borrow_book():
             'google_books_id': google_books_id
         }).execute()
         
-        return jsonify({"success": "Book borrowed successfully"})
+        # Add 10 points for borrowing a book (requires executing from backend context, we just do it via supabase)
+        try:
+            reward_res = supabase.table('userrewards').select('*').eq('user_id', session['user_id']).execute()
+            if reward_res.data:
+                curr_pts = reward_res.data[0].get('points', 0)
+                new_pts = curr_pts + 10
+                level = "Novice Reader"
+                if new_pts >= 50: level = "Bookworm"
+                if new_pts >= 150: level = "Avid Reader"
+                if new_pts >= 300: level = "Bibliophile"
+                if new_pts >= 500: level = "Literary Scholar"
+                supabase.table('userrewards').update({'points': new_pts, 'level': level}).eq('user_id', session['user_id']).execute()
+        except Exception as rew_e:
+            pass # ignore reward error for now
+        
+        return jsonify({"success": "Book borrowed successfully! You earned 10 points."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

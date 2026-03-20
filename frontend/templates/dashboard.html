@@ -1,22 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Readofy - Dashboard</title>
+    <title>Readofy - Minimalist Library</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <!-- HEADER -->
     <header class="dashboard-header">
-        <a href="{{ url_for('book.dashboard') }}" class="logo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-book-open" style="color: var(--accent-color);"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-            <span>Readofy</span>
-        </a>
-        <div class="user-nav">
-            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
-            <span class="welcome-text">Welcome, <strong>{{ name }}</strong></span>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Logout</a>
+        <div class="container header-content">
+            <a href="{{ url_for('book.dashboard') }}" class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                Readofy
+            </a>
+            <div class="user-nav">
+                <!-- Rewards Badge -->
+                <div class="reward-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15l-3 3-3-3v-5c0-1.6 1.4-3 3-3h6c1.6 0 3 1.4 3 3v5l-3 3-3-3z"></path><circle cx="12" cy="7" r="1"></circle></svg>
+                    <span id="rewards-display">{{ rewards.points if rewards else 0 }} pts • {{ rewards.level if rewards else 'Novice' }}</span>
+                </div>
+                <button id="theme-toggle" class="btn btn-secondary" style="padding: 0.4rem;" aria-label="Toggle Dark Mode">🌙</button>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary" style="padding: 0.4rem 1rem;">Log Out</a>
+            </div>
         </div>
     </header>
 
@@ -33,25 +39,108 @@
             {% endwith %}
         </div>
 
-        <div class="dashboard-grid">
+        <!-- VARIED RECOMMENDATIONS -->
+        <section class="mb-5">
+            <div class="section-head">
+                <h2 class="section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-color)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    Recommended For You
+                </h2>
+            </div>
+            <div class="horizontal-scroll">
+                {% if suggestions and suggestions|length > 0 %}
+                    {% for book in suggestions %}
+                    <div class="book-card" onclick="openBookPreview('{{ book.id }}', '{{ book.title|replace('\'', '\\\'') }}', '{{ book.author|replace('\'', '\\\'') }}', '{{ book.preview_link }}')" style="cursor: pointer;">
+                        <img src="{{ book.thumbnail }}" alt="Cover" class="book-cover">
+                        <div class="book-info" style="padding: 0.75rem;">
+                            <h3 class="book-title" style="font-size: 0.85rem; margin-bottom: 0;">{{ book.title }}</h3>
+                            <p class="book-author" style="font-size: 0.7rem; margin-bottom: 0;">{{ book.author }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="width: 100%;">No recommendations available right now.</div>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="dashboard-layout">
             <!-- MAIN CONTENT AREA -->
             <div class="main-content">
                 <!-- SEARCH SECTION -->
                 <section class="panel">
-                    <h2 class="panel-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        Discover Books
-                    </h2>
+                    <h2 class="section-title mb-3">Discover Books</h2>
                     <form id="search-form" class="search-container mb-3">
-                        <input type="text" id="search-input" class="input-field" placeholder="Search by title, author, or keyword..." style="margin-bottom: 0;">
+                        <input type="text" id="search-input" class="input-field" placeholder="Search by title, author, or keyword...">
                         <button type="submit" class="btn btn-primary">Search</button>
                     </form>
+                    
+                    <!-- Genre Filters -->
+                    <div class="genre-filters mb-4">
+                        <button class="genre-pill" data-genre="Fiction">Fiction</button>
+                        <button class="genre-pill" data-genre="Mystery">Mystery</button>
+                        <button class="genre-pill" data-genre="Thriller">Thriller</button>
+                        <button class="genre-pill" data-genre="Science Fiction">Sci-Fi</button>
+                        <button class="genre-pill" data-genre="Fantasy">Fantasy</button>
+                        <button class="genre-pill" data-genre="Romance">Romance</button>
+                        <button class="genre-pill" data-genre="Horror">Horror</button>
+                        <button class="genre-pill" data-genre="Biography">Biography</button>
+                        <button class="genre-pill" data-genre="History">History</button>
+                        <button class="genre-pill" data-genre="Technology">Technology</button>
+                        <button class="genre-pill" data-genre="Business">Business</button>
+                        <button class="genre-pill" data-genre="Art">Art</button>
+                        <button class="genre-pill" data-genre="Cooking">Cooking</button>
+                        <button class="genre-pill" data-genre="Psychology">Psychology</button>
+                        <button class="genre-pill" data-genre="Philosophy">Philosophy</button>
+                        <button class="genre-pill" data-genre="Poetry">Poetry</button>
+                        <button class="genre-pill" data-genre="Humor">Humor</button>
+                        <button class="genre-pill" data-genre="Travel">Travel</button>
+                        <button class="genre-pill" data-genre="Music">Music</button>
+                        <button class="genre-pill" data-genre="Sports">Sports</button>
+                    </div>
                     
                     <div id="search-spinner" class="spinner"></div>
                     <div id="search-results">
                         <div class="empty-state">
-                            <p style="margin-bottom: 0.5rem; font-weight: 500;">Search for your next great read!</p>
-                            <p>Type a book name above and hit search.</p>
+                            Search for your next great read!<br>
+                            Earn <strong>10 points</strong> for every book you borrow.
+                        </div>
+                    </div>
+                </section>
+
+                <!-- COMMUNITY BOOK CLUBS SECTION -->
+                <section class="panel">
+                    <h2 class="section-title mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-color)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Community Book Clubs
+                    </h2>
+                    
+                    <!-- View toggle: list clubs vs active club chat -->
+                    <div id="clubs-list-view">
+                        <div class="club-grid" id="clubs-container">
+                            <!-- Clubs injected via JS -->
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button id="btn-load-clubs" class="btn btn-secondary">Load Clubs</button>
+                        </div>
+                    </div>
+
+                    <div id="club-chat-view" style="display: none;">
+                        <div class="section-head mb-2">
+                            <h3 id="active-club-name" style="font-size: 1.1rem;">Club Name</h3>
+                            <button class="btn btn-secondary" onclick="closeClubChat()">Back to Clubs</button>
+                        </div>
+                        <div class="chat-window">
+                            <div class="chat-messages" id="club-chat-history">
+                                <!-- Messages injected via JS -->
+                            </div>
+                            <form id="club-chat-form" class="chat-input-area">
+                                <input type="hidden" id="active-club-id">
+                                <input type="text" id="club-chat-input" class="input-field" placeholder="Type your message..." required>
+                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </section>
@@ -60,81 +149,69 @@
             <!-- RIGHT SIDEBAR -->
             <div class="sidebar">
                 <!-- BORROWED BOOKS SECTION -->
-                <section class="panel">
-                    <h2 class="panel-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                        My Borrowed Books
-                    </h2>
-                    
-                    <div class="borrowed-list">
+                <section class="panel" style="padding: 1.25rem;">
+                    <h2 class="section-title mb-3" style="font-size: 1.1rem;">Borrowed Books</h2>
+                    <div>
                         {% if borrowed_books and borrowed_books|length > 0 %}
                             {% for book in borrowed_books %}
-                            <div class="borrowed-item">
-                                <div class="borrowed-info">
+                            <div class="list-item">
+                                <div class="list-item-info">
                                     <h4>{{ book.book_title }}</h4>
                                     <p>{{ book.book_author }}</p>
-                                    <p style="font-size: 0.65rem; margin-top: 0.25rem;">
-                                        Borrowed: {{ book.borrow_date[:10] }}
+                                    <p style="font-size: 0.7rem; margin-top: 0.4rem;">
                                         <span class="due-date-display" data-date="{{ book.borrow_date }}"></span>
                                     </p>
                                 </div>
-                                <button class="btn btn-danger" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;" onclick="returnBook('{{ book.id }}')">Return</button>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <a href="{{ url_for('book.read_book', google_books_id=book.google_books_id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Read</a>
+                                    <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="returnBook('{{ book.id }}')">Return</button>
+                                </div>
                             </div>
                             {% endfor %}
                         {% else %}
-                            <div class="empty-state" style="padding: 1rem;">
-                                No items currently borrowed.
-                            </div>
+                            <div class="empty-state" style="padding: 1.5rem 1rem;">No books borrowed.</div>
                         {% endif %}
                     </div>
                 </section>
 
                 <!-- WISHLIST SECTION -->
-                <section class="panel">
-                    <h2 class="panel-title">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                        My Wishlist
-                    </h2>
-                    
-                    <div class="borrowed-list">
+                <section class="panel" style="padding: 1.25rem;">
+                    <h2 class="section-title mb-3" style="font-size: 1.1rem;">My Wishlist</h2>
+                    <div>
                         {% if wishlist_books and wishlist_books|length > 0 %}
                             {% for book in wishlist_books %}
-                            <div class="borrowed-item" style="border-left: 3px solid #f43f5e;">
-                                <div class="borrowed-info">
+                            <div class="list-item" style="flex-direction: column; align-items: flex-start;">
+                                <div class="list-item-info" style="width: 100%;">
                                     <h4>{{ book.book_title }}</h4>
                                     <p>{{ book.book_author }}</p>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                        <a href="{{ book.preview_link }}" target="_blank" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.65rem;">Preview</a>
-                                        <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.65rem;" onclick="borrowBook('{{ book.google_books_id }}', {{ book.book_title|tojson|forceescape }}, {{ book.book_author|tojson|forceescape }})">Borrow</button>
-                                        <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.65rem;" onclick="removeWishlist('{{ book.id }}')">Remove</button>
-                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.25rem; margin-top: 0.75rem; width: 100%;">
+                                    <a href="{{ url_for('book.read_book', google_books_id=book.google_books_id) }}" class="btn btn-secondary" style="flex:1; padding: 0.3rem; font-size: 0.75rem;">Read</a>
+                                    <button class="btn btn-primary" style="flex:1; padding: 0.3rem; font-size: 0.75rem;" onclick="borrowBook('{{ book.google_books_id }}', {{ book.book_title|tojson|forceescape }}, {{ book.book_author|tojson|forceescape }})">Borrow</button>
+                                    <button class="btn btn-secondary" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="removeWishlist('{{ book.id }}')">
+                                        Remove
+                                    </button>
                                 </div>
                             </div>
                             {% endfor %}
                         {% else %}
-                            <div class="empty-state" style="padding: 1rem;">
-                                Wishlist is empty.
-                            </div>
+                            <div class="empty-state" style="padding: 1.5rem 1rem;">Wishlist is empty.</div>
                         {% endif %}
                     </div>
                 </section>
 
                 <!-- AI CHATBOT SECTION -->
-                <section class="panel">
-                    <h2 class="panel-title" style="display: flex; justify-content: space-between; width: 100%;">
-                        <span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            AI Librarian
-                        </span>
-                        <button id="btn-recommend" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Suggest Books</button>
+                <section class="panel" style="padding: 1.25rem;">
+                    <h2 class="section-title mb-3" style="font-size: 1.1rem; flex-wrap: wrap;">
+                        AI Librarian
                     </h2>
-                    <div class="chat-container">
-                        <div class="chat-history" id="chat-history">
-                            <div class="chat-bubble chat-bot">Hello! I'm your Readofy AI Librarian. What kind of books are you looking for today?</div>
+                    <div class="chat-window" style="height: 300px; border: none; background: transparent;">
+                        <div class="chat-messages" id="chat-history" style="background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 0.5rem;">
+                            <div class="msg-bubble msg-bot">Hello! I'm your Readofy AI Librarian. What kind of books are you looking for today?</div>
                         </div>
-                        <form id="chat-form" class="chat-input-area">
-                            <input type="text" id="chat-input" class="input-field" placeholder="Ask me something..." style="margin-bottom: 0;" required>
-                            <button type="submit" class="btn btn-primary">
+                        <form id="chat-form" style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="chat-input" class="input-field" placeholder="Ask me something..." required style="padding: 0.5rem; font-size: 0.85rem;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
                         </form>
@@ -143,6 +220,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Modals or overlays could go here -->
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
