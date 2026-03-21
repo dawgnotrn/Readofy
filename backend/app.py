@@ -12,11 +12,12 @@ from routes.reward_routes import reward_bp
 load_dotenv()
 
 # Initialize Flask app
-# Specifying the exact templates and static folders based on the project structure requested
+# Specifying the exact templates and static folders using absolute paths
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app = Flask(
     __name__, 
-    template_folder='../frontend/templates',
-    static_folder='../frontend/static'
+    template_folder=os.path.join(BASE_DIR, 'frontend', 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'frontend', 'static')
 )
 
 # Set the secret key for session management
